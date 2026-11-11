@@ -1,4 +1,8 @@
 {
+  "name": "puesta_a_punto",
+  "version": "1.0.0",
+  "type": "module",
+  "main": "src/app.js",
   "dependencies": {
     "bcryptjs": "^3.0.3",
     "ejs": "^7.0.2",
