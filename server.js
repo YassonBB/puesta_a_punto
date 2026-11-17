@@ -29,3 +29,34 @@ app.set('db', db);
 app.listen(port, () => {
     console.log(`Servidor corriendo en http://localhost:${port}`);
 });
+
+// Ruta GET para mostrar el formulario HTML
+app.get('/login', (req, res) => {
+    // Aquí puedes enviar un archivo HTML con res.sendFile()
+    res.send('<form method="POST" action="/login"><input name="nombre" placeholder="Usuario"><input type="password" name="password" placeholder="Contraseña"><button>Entrar</button></form>');
+});
+
+// Ruta POST para procesar el login
+app.post('/login', (req, res) => {
+    const { nombre, password } = req.body;
+
+    db.get('SELECT * FROM usuarios WHERE nombre = ? AND password = ?', [nombre, password], (err, usuario) => {
+        if (err) return res.status(500).send('Error en el servidor');
+        
+        if (usuario) {
+            // Guardar datos del usuario en la sesión
+            req.session.usuario_id = usuario.id;
+            req.session.rol = usuario.rol;
+            req.session.grupo_id = usuario.grupo_id;
+
+            // Redirección basada en el rol
+            if (usuario.rol === 'admin') {
+                res.redirect('/admin/panel'); // Ruta que programará Óscar
+            } else {
+                res.redirect('/chat'); // Ruta que programará Mario
+            }
+        } else {
+            res.send('Credenciales incorrectas <a href="/login">Volver</a>');
+        }
+    });
+});
