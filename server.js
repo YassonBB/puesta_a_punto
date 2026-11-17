@@ -60,3 +60,29 @@ app.post('/login', (req, res) => {
         }
     });
 });
+// Middleware para proteger las rutas del administrador
+function requiereAdmin(req, res, next) {
+    if (req.session.usuario_id && req.session.rol === 'admin') {
+        next(); // Tiene permiso, continúa a la ruta de Óscar
+    } else {
+        res.status(403).send('Acceso denegado. Solo para administradores.');
+    }
+}
+
+// Middleware para proteger las rutas de los usuarios normales
+function requiereUsuario(req, res, next) {
+    if (req.session.usuario_id && req.session.rol === 'usuario') {
+        next(); // Tiene permiso, continúa a la ruta de Mario
+    } else {
+        res.redirect('/login');
+    }
+}
+
+// Ejemplo de cómo Óscar o Mario usarán tus middlewares en sus rutas:
+app.get('/admin/panel', requiereAdmin, (req, res) => {
+    res.send('Bienvenido Administrador'); 
+});
+
+app.get('/chat', requiereUsuario, (req, res) => {
+    res.send(`Bienvenido al chat de tu grupo: ${req.session.grupo_id}`);
+});
