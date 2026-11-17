@@ -1,0 +1,24 @@
+extends layout
+
+block content
+  h1= title
+  p Bienvenido al sistema de mensajería
+
+  //- Esta sección mostrará un mensaje de error si el login falla
+  if error
+    p.error(style="color: red; font-weight: bold;")= error
+
+  //- El formulario envía los datos por POST a la ruta /login
+  form(action="/login", method="POST")
+    div
+      label(for="username") Usuario:
+      //- El atributo 'name' es clave, así lo leerás en el backend (req.body.username)
+      input(type="text", name="username", id="username", required)
+    
+    div(style="margin-top: 10px;")
+      label(for="password") Contraseña:
+      //- Igualmente, este será req.body.password
+      input(type="password", name="password", id="password", required)
+    
+    div(style="margin-top: 20px;")
+      button(type="submit") Entrar

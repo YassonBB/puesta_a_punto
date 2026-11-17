@@ -1,8 +1,196 @@
-body {
-  padding: 50px;
-  font: 14px "Lucida Grande", Helvetica, Arial, sans-serif;
+@import url('https://fonts.googleapis.com/css2?family=Open+Sans:wght@400;600;700&display=swap');
+
+/* ==========================================
+   COLORES CORPORATIVOS (Inspirado en la imagen)
+   ========================================== */
+:root {
+  --color-rojo: #D2002E;       /* Rojo de la cabecera */
+  --color-azul-marino: #1B2446; /* Azul de los botones y textos */
+  --color-azul-hover: #273566;
+  --bg-fondo: #F8F9FA;         /* Gris muy claro para el exterior */
+  --bg-blanco: #FFFFFF;
+  --bg-info: #F0F4F8;          /* Azul clarito para cuadros de información */
+  --borde-suave: #E2E2E2;
+  --texto-principal: #1B2446;
+  --texto-secundario: #666666;
 }
 
-a {
-  color: #00B7FF;
+body {
+  font-family: 'Open Sans', Arial, sans-serif;
+  background-color: var(--bg-fondo);
+  color: var(--texto-principal);
+  margin: 0;
+  padding: 0 0 30px 0;
 }
+
+/* ==========================================
+   CABECERA (Simulando la barra roja superior)
+   ========================================== */
+h1 {
+  background-color: var(--color-rojo);
+  color: white;
+  padding: 15px 30px;
+  margin: 0 0 30px 0;
+  font-size: 1.4rem;
+  text-transform: uppercase;
+  font-weight: 700;
+  box-shadow: 0 2px 4px rgba(0,0,0,0.1);
+  display: flex;
+  align-items: center;
+}
+
+h2, h3, h4 {
+  color: var(--color-azul-marino);
+  text-transform: uppercase;
+  font-weight: 700;
+  margin-top: 0;
+}
+
+/* Enlaces (Cerrar sesión, volver, etc.) */
+a {
+  color: var(--color-azul-marino);
+  text-decoration: none;
+  font-weight: 600;
+  font-size: 0.9rem;
+}
+
+a:hover {
+  text-decoration: underline;
+}
+
+/* ==========================================
+   PANELES BLANCOS (Estilo tarjeta de entradas)
+   ========================================== */
+form, .panel, table, div[style*="overflow-y: auto"] {
+  background-color: var(--bg-blanco) !important;
+  border: 1px solid var(--borde-suave) !important;
+  border-radius: 0; /* Bordes rectos como en la web */
+}
+
+form {
+  padding: 25px;
+  box-shadow: 0 1px 3px rgba(0,0,0,0.05);
+}
+
+/* Añadimos un padding general para que el contenido no pegue a los bordes */
+div[style*="display: flex"] {
+  padding: 0 30px;
+}
+
+/* ==========================================
+   FORMULARIOS E INPUTS
+   ========================================== */
+input[type="text"],
+input[type="password"],
+input[type="file"],
+select {
+  width: 100%;
+  padding: 12px;
+  margin: 8px 0 15px 0;
+  border: 1px solid #CCC;
+  border-radius: 2px;
+  font-family: inherit;
+  color: var(--texto-principal);
+  box-sizing: border-box;
+}
+
+input:focus, select:focus {
+  outline: none;
+  border-color: var(--color-azul-marino);
+}
+
+/* ==========================================
+   BOTONES (Estilo "Comprar Entradas")
+   ========================================== */
+button {
+  background-color: var(--color-azul-marino);
+  color: white;
+  padding: 12px 20px;
+  border: none;
+  border-radius: 2px;
+  cursor: pointer;
+  font-weight: 700;
+  text-transform: uppercase;
+  font-size: 0.85rem;
+  letter-spacing: 0.5px;
+  transition: background-color 0.2s;
+  width: 100%; /* Por defecto ocupan todo el ancho, como "Venta para socios" */
+  margin-bottom: 8px;
+}
+
+button:hover {
+  background-color: var(--color-azul-hover);
+}
+
+/* Excepción para botones pequeños (como el de Enviar en el chat o Baja) */
+button[style*="padding: 5px"], form[action*="/users/eliminar"] button {
+  width: auto;
+  padding: 8px 15px !important;
+  margin-bottom: 0;
+}
+
+/* ==========================================
+   TABLAS Y LISTAS (Líneas punteadas divisorias)
+   ========================================== */
+table {
+  width: 100%;
+  border-collapse: collapse;
+  margin-top: 15px;
+}
+
+/* En la imagen, las filas se separan por una fina línea punteada/discontinua */
+th, td, ul li {
+  padding: 15px;
+  text-align: left;
+  border-bottom: 1px dotted #B0B0B0; 
+}
+
+th {
+  color: var(--texto-secundario);
+  font-size: 0.8rem;
+  text-transform: uppercase;
+  background-color: transparent;
+  border-bottom: 2px solid var(--borde-suave);
+}
+
+ul {
+  list-style: none;
+  padding: 0;
+  background: var(--bg-blanco);
+  border: 1px solid var(--borde-suave);
+}
+
+ul li {
+  background: transparent;
+  margin: 0;
+  border-radius: 0;
+  box-shadow: none;
+}
+
+ul li:last-child {
+  border-bottom: none;
+}
+
+/* ==========================================
+   MENSAJES DEL CHAT
+   ========================================== */
+div[style*="overflow-y: auto"] > div {
+  padding: 10px 15px;
+  background-color: var(--bg-info); /* Fondo azul clarito para los mensajes */
+  border-radius: 4px;
+  margin-bottom: 10px !important;
+  border: 1px solid #d0e3f0;
+  display: inline-block;
+  width: fit-content;
+  max-width: 80%;
+}
+
+/* Alinear mensajes propios a la derecha */
+div[style*="text-align: right"] > div {
+  background-color: var(--bg-blanco);
+  border: 1px solid var(--borde-suave);
+  float: right;
+  clear: both;
+}
+
+div

@@ -1,3 +1,19 @@
+# Dependencias de Node
 node_modules/
+
+# Base de datos local (evita conflictos al fusionar el código)
+database.db
+
+# Fotos de perfil subidas por los usuarios (no queremos subir pruebas al repositorio)
 public/uploads/*
-!.gitkeep
+!public/uploads/.gitkeep
+
+# Archivos de entorno y secretos (por si usáis .env más adelante)
+.env
+
+# Logs de errores de npm
+npm-debug.log*
+
+# Archivos ocultos del sistema operativo (Mac/Windows)
+.DS_Store
+Thumbs.db

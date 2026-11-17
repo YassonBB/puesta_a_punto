@@ -8,8 +8,8 @@ const sqlite3 = require('sqlite3').verbose();
 
 // 1. Importar las rutas que han programado tus compañeros
 const indexRouter = require('./routes/index');
-const usersRouter = require('./routes/users');
-const mensajesRouter = require('./routes/mensajes');
+const usersRouter = require('./routes/users'); // Óscar
+const mensajesRouter = require('./routes/mensajes'); // Mario
 
 const app = express();
 const port = 3000;
@@ -32,10 +32,44 @@ app.use(session({
     saveUninitialized: true
 }));
 
-// 5. Conexión a la base de datos SQLite
+// 5. Conexión a SQLite y CREACIÓN DEL ESQUEMA (Tu tarea de BD)
 const db = new sqlite3.Database('./database.db', (err) => {
-    if (err) console.error('Error al conectar a la base de datos:', err);
-    else console.log('Conectado a SQLite.');
+    if (err) {
+        console.error('Error al conectar a la base de datos:', err);
+    } else {
+        console.log('✅ Conectado a SQLite.');
+        
+        // Creamos las tablas y relaciones si no existen
+        db.serialize(() => {
+            // Tabla Grupos
+            db.run(`CREATE TABLE IF NOT EXISTS grupos (
+                id INTEGER PRIMARY KEY AUTOINCREMENT,
+                nombre TEXT NOT NULL UNIQUE
+            )`);
+            
+            // Tabla Usuarios (con clave foránea a grupos)
+            db.run(`CREATE TABLE IF NOT EXISTS usuarios (
+                id INTEGER PRIMARY KEY AUTOINCREMENT,
+                nombre TEXT NOT NULL UNIQUE,
+                password TEXT NOT NULL,
+                rol TEXT DEFAULT 'usuario',
+                foto_perfil TEXT,
+                grupo_id INTEGER,
+                FOREIGN KEY (grupo_id) REFERENCES grupos (id)
+            )`);
+
+            // Tabla Mensajes (con validación de emisor y receptor)
+            db.run(`CREATE TABLE IF NOT EXISTS mensajes (
+                id INTEGER PRIMARY KEY AUTOINCREMENT,
+                contenido TEXT NOT NULL,
+                emisor_id INTEGER,
+                receptor_id INTEGER,
+                FOREIGN KEY (emisor_id) REFERENCES usuarios (id),
+                FOREIGN KEY (receptor_id) REFERENCES usuarios (id)
+            )`);
+            console.log('✅ Esquema de tablas verificado/creado.');
+        });
+    }
 });
 
 // Exponer la base de datos para que las rutas de Óscar y Mario puedan usarla
@@ -63,14 +97,24 @@ function requiereUsuario(req, res, next) {
 // ==========================================
 // SISTEMA DE LOGIN
 // ==========================================
-app.get('/login', (req, res) => {
-    res.send('<form method="POST" action="/login"><input name="nombre" placeholder="Usuario"><input type="password" name="password" placeholder="Contraseña"><button>Entrar</button></form>');
+
+// Redirigir la raíz directamente al login
+app.get('/', (req, res) => {
+    res.redirect('/login');
 });
 
-app.post('/login', (req, res) => {
-    const { nombre, password } = req.body;
+// Cargar tu vista Pug de login
+app.get('/login', (req, res) => {
+    res.render('login', { title: 'Iniciar Sesión', error: null });
+});
 
-    db.get('SELECT * FROM usuarios WHERE nombre = ? AND password = ?', [nombre, password], (err, usuario) => {
+// Procesar el formulario
+app.post('/login', (req, res) => {
+    // Nota: Como en el login.pug pusimos username, lo capturamos como username
+    const { username, password } = req.body;
+
+    // Buscamos el usuario por el campo "nombre" (o cambias "nombre" por "username" en tu DB)
+    db.get('SELECT * FROM usuarios WHERE nombre = ? AND password = ?', [username, password], (err, usuario) => {
         if (err) return res.status(500).send('Error en el servidor');
         
         if (usuario) {
@@ -84,7 +128,8 @@ app.post('/login', (req, res) => {
                 res.redirect('/mensajes'); // Redirige al chat de Mario
             }
         } else {
-            res.send('Credenciales incorrectas <a href="/login">Volver</a>');
+            // Devuelve la misma vista Pug pero inyectando un mensaje de error
+            res.render('login', { title: 'Iniciar Sesión', error: 'Credenciales incorrectas' });
         }
     });
 });
@@ -118,5 +163,23 @@ app.use(function(err, req, res, next) {
 // ARRANQUE DEL SERVIDOR
 // ==========================================
 app.listen(port, () => {
-    console.log(`Servidor unificado corriendo en http://localhost:${port}`);
+    console.log(`🚀 Servidor unificado corriendo en http://localhost:${port}`);
 });
+
+// ==========================================
+            // INYECCIÓN DE DATOS DE PRUEBA
+            // ==========================================
+            // 1. Creamos un grupo por defecto
+            db.run(`INSERT OR IGNORE INTO grupos (id, nombre) VALUES (1, 'Grupo Alfa')`);
+
+            // 2. Creamos el usuario Administrador (para Óscar)
+            // Credenciales: admin / 1234
+            db.run(`INSERT OR IGNORE INTO usuarios (id, nombre, password, rol, grupo_id) 
+                    VALUES (1, 'admin', '1234', 'admin', 1)`);
+
+            // 3. Creamos un usuario normal (para Mario)
+            // Credenciales: yassin / 1234
+            db.run(`INSERT OR IGNORE INTO usuarios (id, nombre, password, rol, grupo_id) 
+                    VALUES (2, 'yassin', '1234', 'usuario', 1)`);
+            
+            console.log('✅ Datos de prueba inyectados (admin y yassin).');

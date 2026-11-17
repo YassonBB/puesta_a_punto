@@ -1,29 +1,35 @@
 extends layout
 
 block content
-  .chat-container
-    //- Panel lateral con compañeros del mismo grupo
-    aside.sidebar
+  h1= title
+  a(href="/login" style="float:right; color:red;") Cerrar sesión
+  
+  div(style="display: flex; gap: 20px; margin-top: 20px;")
+    // LISTA DE COMPAÑEROS
+    div(style="width: 30%; border-right: 1px solid #ccc; padding-right: 10px;")
       h3 Compañeros de Grupo
       ul
-        each mate in groupMates
-          li
-            img(src=`/uploads/${mate.foto}`, width="35", height="35", alt=mate.nombre)
-            span= mate.nombre
+        each u in usuarios
+          if u.id !== mi_id
+            li= u.nombre + ' (' + u.rol + ')'
+    
+    // BANDEJA DE CHAT
+    div(style="width: 70%;")
+      div(style="border: 1px solid #ccc; height: 300px; overflow-y: auto; padding: 10px; margin-bottom: 10px; background: #f9f9f9;")
+        if mensajes && mensajes.length > 0
+          each msg in mensajes
+            div(style=msg.emisor_id === mi_id ? "text-align: right; margin-bottom: 10px;" : "text-align: left; margin-bottom: 10px;")
+              strong(style=msg.emisor_id === mi_id ? "color: blue;" : "color: green;")= (msg.emisor_id === mi_id ? 'Yo' : msg.emisor_nombre) + ': '
+              span= msg.contenido
+        else
+          p No hay mensajes en el grupo.
 
-    //- Panel principal de conversación
-    main.chat-area
-      .messages
-        each msg in messages
-          div(class=`msg ${msg.senderId._id.toString() === user.id ? 'sent' : 'received'}`)
-            strong #{msg.senderId.nombre}:
-            p= msg.text
-
-      //- Formulario de envío
-      form(action="/mensajes/enviar", method="POST")
-        select(name="receiverId", required)
+      // FORMULARIO DE ENVÍO
+      form(action="/mensajes" method="POST")
+        select(name="receptor_id" required style="margin-right:10px; padding: 5px;")
           option(value="") Selecciona destinatario...
-          each mate in groupMates
-            option(value=mate._id)= mate.nombre
-        input(type="text", name="text", placeholder="Escribe un mensaje...", required)
-        button(type="submit") Enviar
+          each u in usuarios
+            if u.id !== mi_id
+              option(value=u.id)= u.nombre
+        input(type="text" name="contenido" placeholder="Escribe tu mensaje..." required style="width: 40%; margin-right:10px; padding: 5px;")
+        button(type="submit" style="padding: 5px 15px;") Enviar
