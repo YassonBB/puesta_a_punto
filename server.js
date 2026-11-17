@@ -34,43 +34,56 @@ app.use(session({
 
 // 5. Conexión a SQLite y CREACIÓN DEL ESQUEMA (Tu tarea de BD)
 const db = new sqlite3.Database('./database.db', (err) => {
-    if (err) {
-        console.error('Error al conectar a la base de datos:', err);
-    } else {
-        console.log('✅ Conectado a SQLite.');
-        
-        // Creamos las tablas y relaciones si no existen
-        db.serialize(() => {
-            // Tabla Grupos
-            db.run(`CREATE TABLE IF NOT EXISTS grupos (
-                id INTEGER PRIMARY KEY AUTOINCREMENT,
-                nombre TEXT NOT NULL UNIQUE
-            )`);
-            
-            // Tabla Usuarios (con clave foránea a grupos)
-            db.run(`CREATE TABLE IF NOT EXISTS usuarios (
-                id INTEGER PRIMARY KEY AUTOINCREMENT,
-                nombre TEXT NOT NULL UNIQUE,
-                password TEXT NOT NULL,
-                rol TEXT DEFAULT 'usuario',
-                foto_perfil TEXT,
-                grupo_id INTEGER,
-                FOREIGN KEY (grupo_id) REFERENCES grupos (id)
-            )`);
+    if (err) return console.error('Error al abrir la BD:', err.message);
+    console.log('✅ Conectado a SQLite.');
 
-            // Tabla Mensajes (con validación de emisor y receptor)
-            db.run(`CREATE TABLE IF NOT EXISTS mensajes (
-                id INTEGER PRIMARY KEY AUTOINCREMENT,
-                contenido TEXT NOT NULL,
-                emisor_id INTEGER,
-                receptor_id INTEGER,
-                FOREIGN KEY (emisor_id) REFERENCES usuarios (id),
-                FOREIGN KEY (receptor_id) REFERENCES usuarios (id)
-            )`);
-            console.log('✅ Esquema de tablas verificado/creado.');
+    // db.serialize obliga a ejecutar las consultas paso a paso (una tras otra)
+    db.serialize(() => {
+        // 1. Crear las tablas
+        db.run(`CREATE TABLE IF NOT EXISTS grupos (
+            id INTEGER PRIMARY KEY AUTOINCREMENT,
+            nombre TEXT NOT NULL
+        )`);
+
+        db.run(`CREATE TABLE IF NOT EXISTS usuarios (
+            id INTEGER PRIMARY KEY AUTOINCREMENT,
+            nombre TEXT NOT NULL,
+            password TEXT NOT NULL,
+            rol TEXT NOT NULL,
+            grupo_id INTEGER,
+            foto_perfil TEXT,
+            FOREIGN KEY(grupo_id) REFERENCES grupos(id)
+        )`);
+
+        db.run(`CREATE TABLE IF NOT EXISTS mensajes (
+            id INTEGER PRIMARY KEY AUTOINCREMENT,
+            contenido TEXT NOT NULL,
+            emisor_id INTEGER,
+            receptor_id INTEGER,
+            FOREIGN KEY(emisor_id) REFERENCES usuarios(id),
+            FOREIGN KEY(receptor_id) REFERENCES usuarios(id)
+        )`, () => {
+            console.log('Esquema de tablas verificado/creado.');
+            
+            // 2. Inyectar datos SÓLO después de confirmar que las tablas existen
+            db.get("SELECT COUNT(*) as count FROM usuarios", (err, row) => {
+                if (row && row.count === 0) {
+                    db.run("INSERT INTO grupos (nombre) VALUES ('Grupo Alfa')", function(err) {
+                        if (!err) {
+                            db.run("INSERT INTO usuarios (nombre, password, rol, grupo_id) VALUES ('admin', '1234', 'admin', 1)");
+                            db.run("INSERT INTO usuarios (nombre, password, rol, grupo_id) VALUES ('yassin', '1234', 'usuario', 1)", () => {
+                                console.log('Datos de prueba inyectados (admin y yassin).');
+                            });
+                        }
+                    });
+                }
+            });
         });
-    }
+    });
 });
+
+// Asegurarnos de que el resto de rutas pueden usar la base de datos
+app.set('db', db);
 
 // Exponer la base de datos para que las rutas de Óscar y Mario puedan usarla
 app.set('db', db);
