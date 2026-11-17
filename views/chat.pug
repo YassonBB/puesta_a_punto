@@ -1,0 +1,29 @@
+extends layout
+
+block content
+  .chat-container
+    //- Panel lateral con compañeros del mismo grupo
+    aside.sidebar
+      h3 Compañeros de Grupo
+      ul
+        each mate in groupMates
+          li
+            img(src=`/uploads/${mate.foto}`, width="35", height="35", alt=mate.nombre)
+            span= mate.nombre
+
+    //- Panel principal de conversación
+    main.chat-area
+      .messages
+        each msg in messages
+          div(class=`msg ${msg.senderId._id.toString() === user.id ? 'sent' : 'received'}`)
+            strong #{msg.senderId.nombre}:
+            p= msg.text
+
+      //- Formulario de envío
+      form(action="/mensajes/enviar", method="POST")
+        select(name="receiverId", required)
+          option(value="") Selecciona destinatario...
+          each mate in groupMates
+            option(value=mate._id)= mate.nombre
+        input(type="text", name="text", placeholder="Escribe un mensaje...", required)
+        button(type="submit") Enviar
