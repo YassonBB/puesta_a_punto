@@ -1,42 +1,72 @@
+const createError = require('http-errors');
 const express = require('express');
+const path = require('path');
+const cookieParser = require('cookie-parser');
+const logger = require('morgan');
 const session = require('express-session');
 const sqlite3 = require('sqlite3').verbose();
-const path = require('path');
+
+// 1. Importar las rutas que han programado tus compañeros
+const indexRouter = require('./routes/index');
+const usersRouter = require('./routes/users');
+const mensajesRouter = require('./routes/mensajes');
 
 const app = express();
 const port = 3000;
 
-// Configuración para leer datos de formularios y JSON
-app.use(express.urlencoded({ extended: true }));
-app.use(express.json());
+// 2. Configuración del motor de vistas (Pug)
+app.set('views', path.join(__dirname, 'views'));
+app.set('view engine', 'pug');
 
-// Configuración de sesiones para el login
+// 3. Middlewares generales
+app.use(logger('dev'));
+app.use(express.json());
+app.use(express.urlencoded({ extended: true }));
+app.use(cookieParser());
+app.use(express.static(path.join(__dirname, 'public')));
+
+// 4. Configuración de sesiones para el login
 app.use(session({
     secret: 'clave_secreta_proyecto',
     resave: false,
     saveUninitialized: true
 }));
 
-// Conexión a la base de datos SQLite
+// 5. Conexión a la base de datos SQLite
 const db = new sqlite3.Database('./database.db', (err) => {
     if (err) console.error('Error al conectar a la base de datos:', err);
     else console.log('Conectado a SQLite.');
 });
 
-// Exponer la base de datos para que Óscar y Mario la usen en sus rutas
+// Exponer la base de datos para que las rutas de Óscar y Mario puedan usarla
 app.set('db', db);
 
-app.listen(port, () => {
-    console.log(`Servidor corriendo en http://localhost:${port}`);
-});
+// ==========================================
+// MIDDLEWARES DE AUTENTICACIÓN
+// ==========================================
+function requiereAdmin(req, res, next) {
+    if (req.session.usuario_id && req.session.rol === 'admin') {
+        next();
+    } else {
+        res.status(403).send('Acceso denegado. Solo para administradores.');
+    }
+}
 
-// Ruta GET para mostrar el formulario HTML
+function requiereUsuario(req, res, next) {
+    if (req.session.usuario_id && req.session.rol === 'usuario') {
+        next();
+    } else {
+        res.redirect('/login');
+    }
+}
+
+// ==========================================
+// SISTEMA DE LOGIN
+// ==========================================
 app.get('/login', (req, res) => {
-    // Aquí puedes enviar un archivo HTML con res.sendFile()
     res.send('<form method="POST" action="/login"><input name="nombre" placeholder="Usuario"><input type="password" name="password" placeholder="Contraseña"><button>Entrar</button></form>');
 });
 
-// Ruta POST para procesar el login
 app.post('/login', (req, res) => {
     const { nombre, password } = req.body;
 
@@ -44,45 +74,49 @@ app.post('/login', (req, res) => {
         if (err) return res.status(500).send('Error en el servidor');
         
         if (usuario) {
-            // Guardar datos del usuario en la sesión
             req.session.usuario_id = usuario.id;
             req.session.rol = usuario.rol;
             req.session.grupo_id = usuario.grupo_id;
 
-            // Redirección basada en el rol
             if (usuario.rol === 'admin') {
-                res.redirect('/admin/panel'); // Ruta que programará Óscar
+                res.redirect('/users'); // Redirige a la zona CRUD de Óscar
             } else {
-                res.redirect('/chat'); // Ruta que programará Mario
+                res.redirect('/mensajes'); // Redirige al chat de Mario
             }
         } else {
             res.send('Credenciales incorrectas <a href="/login">Volver</a>');
         }
     });
 });
-// Middleware para proteger las rutas del administrador
-function requiereAdmin(req, res, next) {
-    if (req.session.usuario_id && req.session.rol === 'admin') {
-        next(); // Tiene permiso, continúa a la ruta de Óscar
-    } else {
-        res.status(403).send('Acceso denegado. Solo para administradores.');
-    }
-}
 
-// Middleware para proteger las rutas de los usuarios normales
-function requiereUsuario(req, res, next) {
-    if (req.session.usuario_id && req.session.rol === 'usuario') {
-        next(); // Tiene permiso, continúa a la ruta de Mario
-    } else {
-        res.redirect('/login');
-    }
-}
+// ==========================================
+// INTEGRACIÓN DE RUTAS DE COMPAÑEROS
+// ==========================================
+app.use('/', indexRouter);
 
-// Ejemplo de cómo Óscar o Mario usarán tus middlewares en sus rutas:
-app.get('/admin/panel', requiereAdmin, (req, res) => {
-    res.send('Bienvenido Administrador'); 
+// Protegemos la ruta /users con tu función requiereAdmin
+app.use('/users', requiereAdmin, usersRouter);
+
+// Protegemos la ruta /mensajes con tu función requiereUsuario
+app.use('/mensajes', requiereUsuario, mensajesRouter);
+
+// ==========================================
+// MANEJO DE ERRORES Y 404
+// ==========================================
+app.use(function(req, res, next) {
+  next(createError(404));
 });
 
-app.get('/chat', requiereUsuario, (req, res) => {
-    res.send(`Bienvenido al chat de tu grupo: ${req.session.grupo_id}`);
+app.use(function(err, req, res, next) {
+  res.locals.message = err.message;
+  res.locals.error = req.app.get('env') === 'development' ? err : {};
+  res.status(err.status || 500);
+  res.render('error');
+});
+
+// ==========================================
+// ARRANQUE DEL SERVIDOR
+// ==========================================
+app.listen(port, () => {
+    console.log(`Servidor unificado corriendo en http://localhost:${port}`);
 });
